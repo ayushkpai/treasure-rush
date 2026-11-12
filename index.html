@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <title>Treasure Rush — Escape the Temple</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-screen="menu">
+  <main class="game" id="game">
+    <canvas id="gameCanvas" aria-label="Treasure Rush temple maze"></canvas>
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="damage-flash" id="damageFlash" aria-hidden="true"></div>
+
+    <header class="hud" id="hud">
+      <div class="hud-cluster hud-left">
+        <div class="score-block">
+          <span class="hud-label">SCORE</span>
+          <strong class="hud-value" id="scoreValue">0</strong>
+        </div>
+        <div class="best-block">
+          <span class="hud-label">BEST</span>
+          <span class="hud-sub" id="bestValue">0</span>
+        </div>
+      </div>
+
+      <div class="hud-cluster hud-center">
+        <div class="timer-wrap">
+          <svg class="timer-ring" viewBox="0 0 60 60" aria-hidden="true">
+            <circle class="timer-track" cx="30" cy="30" r="26"></circle>
+            <circle class="timer-progress" id="timerRing" cx="30" cy="30" r="26"></circle>
+          </svg>
+          <span class="timer-value" id="timerValue">60</span>
+        </div>
+        <div class="goal-block">
+          <div class="level-line">
+            <span class="level-dot" aria-hidden="true"></span>
+            <span>LEVEL <span id="levelValue">1</span></span>
+            <span class="level-name" id="levelName">Sunken Halls</span>
+          </div>
+          <div class="goal-line" id="goalLine">
+            <svg class="icon" aria-hidden="true"><use href="#icon-chest"></use></svg>
+            <span id="objectiveText">CHESTS</span>
+            <strong id="chestValue">0 / 1</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud-cluster hud-right">
+        <div class="lives" id="lives" aria-label="Lives remaining"></div>
+        <div class="key-pill" aria-label="Keys held">
+          <svg class="icon" aria-hidden="true"><use href="#icon-key"></use></svg>
+          <strong id="keyValue">0</strong>
+        </div>
+        <button class="hud-btn" id="pauseBtn" type="button" aria-label="Pause game">
+          <svg class="icon" aria-hidden="true"><use href="#icon-pause"></use></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="dpad" id="dpad" aria-label="Touch movement controls">
+      <button class="dpad-btn dpad-up" type="button" data-dir="up" aria-label="Move up">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7"></path></svg>
+      </button>
+      <button class="dpad-btn dpad-left" type="button" data-dir="left" aria-label="Move left">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7"></path></svg>
+      </button>
+      <div class="dpad-center" aria-hidden="true"><span></span></div>
+      <button class="dpad-btn dpad-right" type="button" data-dir="right" aria-label="Move right">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7"></path></svg>
+      </button>
+      <button class="dpad-btn dpad-down" type="button" data-dir="down" aria-label="Move down">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7"></path></svg>
+      </button>
+    </div>
+
+    <div class="screen screen-start" id="startScreen">
+      <div class="card start-card">
+        <p class="eyebrow">A 60-SECOND TEMPLE RUN</p>
+        <h1 class="game-title">TREASURE<span>RUSH</span></h1>
+        <p class="tagline">Grab the gold. Dodge the traps. Escape before the temple seals you in.</p>
+
+        <div class="chips">
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#icon-hourglass"></use></svg>60 SECONDS</span>
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#icon-heart"></use></svg>3 LIVES</span>
+          <span class="chip"><svg class="icon" aria-hidden="true"><use href="#icon-chest"></use></svg>1 LEVEL</span>
+        </div>
+
+        <button class="btn btn-primary btn-large" id="playBtn" type="button">ENTER THE TEMPLE</button>
+
+        <div class="start-meta">
+          <span class="best-badge">BEST <strong id="startBest">0</strong></span>
+          <button class="sound-btn" id="soundBtn" type="button" aria-pressed="false">
+            <svg class="icon sound-on" aria-hidden="true"><use href="#icon-sound"></use></svg>
+            <svg class="icon sound-off" aria-hidden="true"><use href="#icon-mute"></use></svg>
+            <span id="soundLabel">SOUND ON</span>
+          </button>
+        </div>
+
+        <ul class="howto">
+          <li><span class="howto-key">MOVE</span><span>WASD, arrow keys, or swipe</span></li>
+          <li><span class="howto-key">UNLOCK</span><span>Keys open locked temple gates</span></li>
+          <li><span class="howto-key">LOOT</span><span>Coins +10 · Gems +30 · Chests +100</span></li>
+          <li><span class="howto-key">ESCAPE</span><span>Find every chest, then reach the gate</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="screen is-hidden" id="pauseScreen">
+      <div class="card compact-card">
+        <p class="eyebrow">THE TEMPLE WAITS</p>
+        <h2 class="screen-title">PAUSED</h2>
+        <p class="screen-copy">Catch your breath. The boulders won't wait forever.</p>
+        <div class="button-stack">
+          <button class="btn btn-primary" id="resumeBtn" type="button">RESUME</button>
+          <button class="btn btn-secondary" id="restartBtn" type="button">RESTART RUN</button>
+          <button class="btn btn-ghost" id="quitBtn" type="button">QUIT TO MENU</button>
+        </div>
+        <div class="start-meta pause-meta">
+          <span class="best-badge">BEST <strong id="pauseBest">0</strong></span>
+          <button class="sound-btn" id="soundBtnPause" type="button" aria-pressed="false">
+            <svg class="icon sound-on" aria-hidden="true"><use href="#icon-sound"></use></svg>
+            <svg class="icon sound-off" aria-hidden="true"><use href="#icon-mute"></use></svg>
+            <span class="sound-label">SOUND ON</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="screen is-hidden" id="levelScreen">
+      <div class="card compact-card">
+        <p class="eyebrow" id="levelEyebrow">LEVEL CLEARED</p>
+        <h2 class="screen-title" id="levelCompleteTitle">THE HALLS FALL SILENT</h2>
+        <p class="screen-copy" id="levelCompleteCopy">You slip through the gate with the temple's gold.</p>
+        <div class="score-breakdown">
+          <div class="breakdown-row"><span>Time bonus</span><strong id="levelTimeBonus">+0</strong></div>
+          <div class="breakdown-row"><span>Level bonus</span><strong id="levelClearBonus">+0</strong></div>
+          <div class="breakdown-row total-row"><span>Score</span><strong id="levelScore">0</strong></div>
+        </div>
+        <div class="next-level">
+          <span class="next-label">NEXT</span>
+          <span class="next-name" id="nextLevelName">SERPENT VAULTS</span>
+          <span class="difficulty" id="nextLevelPips" aria-label="Difficulty"></span>
+        </div>
+        <button class="btn btn-primary" id="nextLevelBtn" type="button">DESCEND DEEPER</button>
+      </div>
+    </div>
+
+    <div class="screen is-hidden" id="endScreen">
+      <div class="card compact-card end-card">
+        <p class="eyebrow" id="endEyebrow">GAME OVER</p>
+        <h2 class="screen-title" id="endTitle">THE TEMPLE WINS</h2>
+        <p class="screen-copy" id="endCopy">The walls close in. Your treasure stays behind.</p>
+        <div class="new-best is-hidden" id="newBestBadge">NEW HIGH SCORE</div>
+        <div class="final-score-wrap">
+          <span class="final-label">FINAL SCORE</span>
+          <strong class="final-score" id="finalScore">0</strong>
+          <span class="final-best">BEST <strong id="finalBest">0</strong></span>
+        </div>
+        <div class="run-stats">
+          <div class="run-stat"><svg class="icon" aria-hidden="true"><use href="#icon-coin"></use></svg><strong id="statCoins">0</strong><span>COINS</span></div>
+          <div class="run-stat"><svg class="icon" aria-hidden="true"><use href="#icon-gem"></use></svg><strong id="statGems">0</strong><span>GEMS</span></div>
+          <div class="run-stat"><svg class="icon" aria-hidden="true"><use href="#icon-chest"></use></svg><strong id="statChests">0</strong><span>CHESTS</span></div>
+        </div>
+        <button class="btn btn-primary" id="playAgainBtn" type="button">PLAY AGAIN</button>
+        <button class="btn btn-ghost" id="menuBtn" type="button">MAIN MENU</button>
+      </div>
+    </div>
+
+    <div class="level-fade" id="levelFade" aria-hidden="true"></div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </main>
+
+  <svg class="svg-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="icon-heart" viewBox="0 0 24 24">
+      <path d="M12 20.7S3.6 15.4 2.2 9.9A5.3 5.3 0 0 1 12 6.2a5.3 5.3 0 0 1 9.8 3.7C20.4 15.4 12 20.7 12 20.7z"></path>
+    </symbol>
+    <symbol id="icon-key" viewBox="0 0 24 24">
+      <circle cx="8" cy="12" r="4.2"></circle>
+      <path d="M12.2 12H21M18 12v3M15.5 12v2.2" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"></path>
+    </symbol>
+    <symbol id="icon-chest" viewBox="0 0 24 24">
+      <rect x="3" y="8" width="18" height="12" rx="2"></rect>
+      <path d="M3 11h18M12 8v5" fill="none" stroke="#08100b" stroke-width="1.6"></path>
+      <rect x="10.5" y="12.4" width="3" height="4" rx=".8" fill="#08100b"></rect>
+    </symbol>
+    <symbol id="icon-coin" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.5"></circle>
+      <circle cx="12" cy="12" r="5" fill="none" stroke="#08100b" stroke-width="1.4" opacity=".55"></circle>
+    </symbol>
+    <symbol id="icon-gem" viewBox="0 0 24 24">
+      <path d="M7 4h10l4 6-9 10L3 10l4-6z"></path>
+      <path d="M3 10h18M9.5 4L8 10l4 10 4-10-1.5-6" fill="none" stroke="#08100b" stroke-width="1.2" opacity=".5"></path>
+    </symbol>
+    <symbol id="icon-pause" viewBox="0 0 24 24">
+      <rect x="7" y="5" width="3.5" height="14" rx="1"></rect>
+      <rect x="13.5" y="5" width="3.5" height="14" rx="1"></rect>
+    </symbol>
+    <symbol id="icon-sound" viewBox="0 0 24 24">
+      <path d="M4 9h4l5-4v14l-5-4H4z"></path>
+      <path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8 8 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+    </symbol>
+    <symbol id="icon-mute" viewBox="0 0 24 24">
+      <path d="M4 9h4l5-4v14l-5-4H4z"></path>
+      <path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+    </symbol>
+    <symbol id="icon-hourglass" viewBox="0 0 24 24">
+      <path d="M7 3h10M7 21h10M8 3v4l4 4 4-4V3M8 21v-4l4-4 4 4v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+    </symbol>
+  </svg>
+
+  <script src="js/maze.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/render-entities.js"></script>
+</body>
+</html>
